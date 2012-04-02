@@ -15,6 +15,9 @@ class Pymon:
 	_systemUptime = ""
 	_systemLoad = ""
 	_systemName = ""
+	_kernelRelease = ""
+	_kernelVersion = ""
+	_diskUsage = ""
 	_threadListen = None
 	_threadRequestStop = False
 	_connectionSocket = None
@@ -32,6 +35,8 @@ class Pymon:
 	
 	def refresh(self):
 		self.resetResult()
+		self.get_systemInfo()
+		self.get_diskUsage()
 		self.get_user()
 		self.get_total_process()
 		self.get_uptime()
@@ -50,11 +55,55 @@ class Pymon:
 			return "ciao"
 		else:
 			# Default results style
+			# Top label
 			string = "\n\tPyMon 0.1a - Easy Linux Server Monitoring\n \
 \t Author: Loris Mich <loris@lorismich.it> \n \
-\t Web Site: www.lorismich.it \n"
-			string += "\n\t System Load: \t%s \n\t Uptime: \t%s \n\t Hostname: \t%s \n\t Users: \t%s \n\t Process: \t%s \n\n %s" % (self._systemLoad, self._systemUptime, self._systemName, self._usersNames, self._processTotal, self._message)
+\t Web Site: www.lorismich.it \n\n"
+			# Basic informations
+			string += "\tGeneral Informations: \n\n\t\tSystem Load: \t%s \n\t\tUptime: \t%s \n\t\tHostname: \t%s \n\t\tKernel: \t%s \n\t\tRelease: \t%s \n\t\tUsers: \t%s \n\t\tProcess: \t%s" % (self._systemLoad, self._systemUptime, self._systemName, self._kernelRelease, self._kernelVersion, self._usersNames, self._processTotal)
+			# Disk informations
+			string += "\n\n\t Disk Informations: \n\n %s" % (self._diskUsage)
+			# Footer
+			string += "\n\n %s \n\n" % self._message
+			string += "Press Ctrl + C to quit"
 			return string
+	
+	def putMessage(self, message):
+		self._message = message
+		self.printResults()
+		
+	def get_diskUsage(self):
+		try:
+			self.print_ln("Getting disk information...")
+			system = os.popen("df -H")
+			system = system.readlines()
+			# Remove first line
+			system = system[1:]
+			# Reset string
+			self._diskUsage = ""
+			# @Source example (one line): /dev/sda2 41G 36G 2,5G 94% /
+			for line in system:
+				line = line.split()
+				self._diskUsage += '\t\t' + line[0] + '\t' + line[1] + '\t' + line[2] + '\t' + line[3] + '\t ' + line[4] + '\t' + line[5] + '\n'
+				
+		except Exception as e:
+			error = "Could not get disk informations - %s" % e
+			self.putMessage(error)	
+		
+	def get_systemInfo(self):
+		try:
+			self.print_ln("Getting system information...")
+			# @Source example: Linux d4ng3r-laptop 3.0.0-16-generic #28-Ubuntu SMP Fri Jan 27 17:50:54 UTC 2012 i686 i686 i386 GNU/Linux
+			system = os.popen("uname -a")
+			system = system.readlines()[0]
+			system = string.split(system)
+			# Kernel release
+			self._kernelRelease = system[2]
+			# Kernel version
+			self._kernelVersion = system[7] + ' ' + system[6] + ' ' + system[10]		 	
+		except Exception as e:
+			error = "Could not get system informations - %s" % e
+			self.putMessage(error)
 	
 	def get_user(self):
 		try:
@@ -72,10 +121,6 @@ class Pymon:
 		except Exception as e:
 			error = "Could not find users - %s" % e
 			self.putMessage(error)
-
-	def putMessage(self, message):
-		self._message = message
-		self.printResults()
 		
 	def get_total_process(self):
 		try:
@@ -146,6 +191,7 @@ class Pymon:
 			self._connectionSocket.close()
 		self._message = "See you..."
 		self.printResults()
+		time.sleep(1)
 			
 	def listen_connection(self):
 		# Start listen TCP connection

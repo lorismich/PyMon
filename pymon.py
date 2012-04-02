@@ -14,7 +14,7 @@ def shutdown():
 	# Close active connection
 	if pymon is not None:
 		pymon.stop()
-		print "\nBye bye"
+		os.system("clear")
 			
 try:
 	parser = OptionParser( usage = "usage: %prog [options]" )
