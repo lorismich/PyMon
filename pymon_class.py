@@ -23,19 +23,20 @@ class Pymon:
 	_connectionSocket = None
 	_tcpHost = None
 	_tcpPort = None
+	_networkInformation = ""
 
 	def __init__(self, output = "default", verbose = False, remote = False, host = "127.0.0.1", port = 8899 ):	
-		self.print_ln("Starting monitoring...")
 		self._tcpHost = host
 		self._tcpPort = port
 		self._output = output
 		self._verbose = verbose
 		self._remote = remote
-		self.refresh()
+		self.print_ln("Starting monitoring...")
 	
 	def refresh(self):
 		self.resetResult()
 		self.get_systemInfo()
+		self.get_networkInfo()
 		self.get_diskUsage()
 		self.get_user()
 		self.get_total_process()
@@ -60,9 +61,11 @@ class Pymon:
 \t Author: Loris Mich <loris@lorismich.it> \n \
 \t Web Site: www.lorismich.it \n\n"
 			# Basic informations
-			string += "\tGeneral Informations: \n\n\t\tSystem Load: \t%s \n\t\tUptime: \t%s \n\t\tHostname: \t%s \n\t\tKernel: \t%s \n\t\tRelease: \t%s \n\t\tUsers: \t%s \n\t\tProcess: \t%s" % (self._systemLoad, self._systemUptime, self._systemName, self._kernelRelease, self._kernelVersion, self._usersNames, self._processTotal)
+			string += "\tGeneral Informations: \n\n\t\tSystem Load: \t%s \n\t\tUptime: \t%s \n\t\tHostname: \t%s \n\t\tKernel: \t%s \n\t\tRelease: \t%s \n\t\tUsers: \t\t%s \n\t\tProcess: \t%s" % (self._systemLoad, self._systemUptime, self._systemName, self._kernelRelease, self._kernelVersion, self._usersNames, self._processTotal)
 			# Disk informations
-			string += "\n\n\t Disk Informations: \n\n %s" % (self._diskUsage)
+			string += "\n\n\t Disk Informations: \n\n\t\tFile system\tDim.\tUsati\tDisp.\tUso\tMontato su\n %s" % (self._diskUsage)
+			# Network Informations
+			string += "\n\n\t Network Informations: \n\n\t\tInterface\tRX\t\tTX\n %s" % (self._networkInformation)
 			# Footer
 			string += "\n\n %s \n\n" % self._message
 			string += "Press Ctrl + C to quit"
@@ -84,10 +87,54 @@ class Pymon:
 			# @Source example (one line): /dev/sda2 41G 36G 2,5G 94% /
 			for line in system:
 				line = line.split()
+				# Check file system string lenght
+				if len(line[0]) < 8:
+					line[0] += '\t'
 				self._diskUsage += '\t\t' + line[0] + '\t' + line[1] + '\t' + line[2] + '\t' + line[3] + '\t ' + line[4] + '\t' + line[5] + '\n'
 				
 		except Exception as e:
 			error = "Could not get disk informations - %s" % e
+			self.putMessage(error)	
+	
+	def convert_bytes(self, bytes):
+		bytes = float(bytes)
+		if bytes >= 1099511627776:
+		    terabytes = bytes / 1099511627776
+		    size = '%.2fTB' % terabytes
+		elif bytes >= 1073741824:
+		    gigabytes = bytes / 1073741824
+		    size = '%.2fGB' % gigabytes
+		elif bytes >= 1048576:
+		    megabytes = bytes / 1048576
+		    size = '%.2fMB' % megabytes
+		elif bytes >= 1024:
+		    kilobytes = bytes / 1024
+		    size = '%.2fKB' % kilobytes
+		else:
+		    size = '%.2fb' % bytes
+		return size
+		
+	def get_networkInfo(self):
+		try:
+			self.print_ln("Getting network information...")
+			system = os.popen("netstat -i");
+			self._networkInformation = ""
+			system = system.readlines()
+			# Remove first and second lines
+			system = system[2:]
+			for line in system:
+				line = line.split()
+				# Total data trasmit and recived
+				rx = self.convert_bytes(int(line[1])*int(line[3]))
+				tx = self.convert_bytes(int(line[1])*int(line[7]))
+				# Check rx string lenght
+				if len(rx) < 8:
+					rx += '\t'
+				if len(tx) < 8:
+					tx += '\t'	
+				self._networkInformation += '\t\t' + line[0] + '\t\t'+ rx + '\t' + tx + '\n'
+		except Exception as e:
+			error = "Could not network informations - %s" % e
 			self.putMessage(error)	
 		
 	def get_systemInfo(self):
