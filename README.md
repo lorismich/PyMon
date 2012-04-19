@@ -13,10 +13,16 @@ USAGE
 
 	Usage: pymon.py [options]
 
+	PyMon 0.1a - Easy Linux Server Monitoring Author: Loris Mich
+	<loris@lorimich.it>
+
 	Options:
-  	-h, --help            	Show this help message and exit
-  	-r, --remote          	Enable remote reading.
-  	-p PORT, --port=PORT 	TCP port for incoming connections. (Default: 8899)
-  	-v, --verbose         	Be verbose.
+  	-h, --help            show this help message and exit
+	-c, --continue        Continue reading.
+	-r, --remote          Enable remote reading.
+	-p TCP_PORT, --port=TCP_PORT
+                        TCP port for incoming connections. (Default: 8899)
+	-v, --verbose         Be verbose.
+
 
 Enjoy!
